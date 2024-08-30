@@ -1,4 +1,4 @@
-function calculateEMI() {
+function calculateSimplifiedEMI() {
     // Retrieve input values
     const loanAmount = parseFloat(document.getElementById('loanAmount').value);
     const annualInterestRate = parseFloat(document.getElementById('interestRate').value);
@@ -10,15 +10,18 @@ function calculateEMI() {
         return;
     }
 
-    // Convert annual interest rate to monthly and tenure to months
-    const monthlyInterestRate = annualInterestRate / 12 / 100;
+    // Calculate total interest
+    const annualInterest = (loanAmount * annualInterestRate) / 100;
+    const totalInterest = annualInterest * (loanTenure / 12);
 
-    // EMI calculation formula
-    const emi = (loanAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, loanTenure)) /
-                (Math.pow(1 + monthlyInterestRate, loanTenure) - 1);
+    // Calculate total repayment amount
+    const totalRepaymentAmount = loanAmount + totalInterest;
+
+    // Calculate monthly EMI
+    const monthlyEMI = totalRepaymentAmount / loanTenure;
 
     // Display EMI result
-    document.getElementById('result').innerHTML = `Your EMI is ₹${emi.toFixed(2)}`;
+    document.getElementById('result').innerHTML = `Your EMI is ₹${monthlyEMI.toFixed(2)}`;
 
     // Display EMI schedule in a table
     const emiTable = document.getElementById('emiTable');
@@ -33,7 +36,7 @@ function calculateEMI() {
         const row = emiTableBody.insertRow();
         row.insertCell(0).textContent = paymentDate.toLocaleDateString();
         row.insertCell(1).textContent = endDate.toLocaleDateString();
-        row.insertCell(2).textContent = `₹${emi.toFixed(2)}`;
+        row.insertCell(2).textContent = `₹${monthlyEMI.toFixed(2)}`;
     }
 
     emiTable.style.display = 'table';
