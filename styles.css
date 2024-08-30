@@ -1,45 +1,101 @@
+/* General styles */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
+    font-family: 'Poppins', sans-serif;
+    background-color: #f3f4f6;
+    color: #333;
     padding: 20px;
+    margin: 0;
 }
 
 h1 {
-    color: #333;
+    color: #3498db;
+    text-align: center;
+    margin-bottom: 20px;
 }
 
+/* Form styles */
 form {
     background-color: #fff;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     max-width: 400px;
-    margin: auto;
+    margin: 0 auto 20px;
 }
 
 label {
+    font-weight: bold;
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
 }
 
-input {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 20px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
+input[type="number"],
+input[type="date"] {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
 }
 
 button {
-    background-color: #007bff;
+    width: 100%;
+    background-color: #3498db;
     color: white;
-    padding: 10px 20px;
+    padding: 12px;
+    font-size: 16px;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
+button:hover {
+    background-color: #2980b9;
+}
+
+/* Result styles */
 #result {
-    margin-top: 20px;
     font-size: 18px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Table styles */
+#emiTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 auto;
+}
+
+#emiTable th, #emiTable td {
+    border: 2px solid #3498db;
+    padding: 12px;
+    text-align: center;
+}
+
+#emiTable th {
+    background-color: #2980b9;
+    color: white;
+    font-weight: bold;
+}
+
+#emiTable td {
+    background-color: #ecf0f1;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    form {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    button {
+        font-size: 14px;
+    }
 }
