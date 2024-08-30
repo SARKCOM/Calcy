@@ -89,7 +89,7 @@ button:hover {
 }
 
 /* Table styles */
-#fetchedDataTable {
+#emiTable {
     width: 100%;
     border-collapse: collapse;
     margin: 20px 0;
@@ -100,19 +100,19 @@ button:hover {
     box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
 }
 
-#fetchedDataTable th, #fetchedDataTable td {
+#emiTable th, #emiTable td {
     border: 1px solid #3498db;
     padding: 12px;
     text-align: center;
 }
 
-#fetchedDataTable th {
+#emiTable th {
     background-color: #2980b9;
     color: white;
     font-weight: bold;
 }
 
-#fetchedDataTable td {
+#emiTable td {
     background-color: #eaf2f8;
 }
 
