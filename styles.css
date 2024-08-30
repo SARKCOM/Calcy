@@ -92,6 +92,31 @@ button:hover {
     background-color: #eaf2f8;
 }
 
+/* Table after fetching data */
+#fetchedDataTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px auto;
+    border: 2px solid #3498db;
+    background-color: #eaf2f8;
+}
+
+#fetchedDataTable th, #fetchedDataTable td {
+    border: 1px solid #3498db;
+    padding: 12px;
+    text-align: center;
+}
+
+#fetchedDataTable th {
+    background-color: #2980b9;
+    color: white;
+    font-weight: bold;
+}
+
+#fetchedDataTable td {
+    background-color: #eaf2f8;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     form {
