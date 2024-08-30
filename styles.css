@@ -41,18 +41,19 @@ input[type="date"] {
 
 button {
     width: 100%;
-    background-color: #3498db;
+    background-color: #1abc9c;
     color: white;
     padding: 12px;
     font-size: 16px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 button:hover {
-    background-color: #2980b9;
+    background-color: #16a085;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Result styles */
@@ -60,17 +61,23 @@ button:hover {
     font-size: 18px;
     text-align: center;
     margin-bottom: 20px;
+    padding: 10px;
+    border: 2px solid #3498db;
+    border-radius: 5px;
+    background-color: #ecf0f1;
 }
 
 /* Table styles */
 #emiTable {
     width: 100%;
     border-collapse: collapse;
-    margin: 0 auto;
+    margin: 20px auto;
+    border: 2px solid #3498db;
+    background-color: #eaf2f8;
 }
 
 #emiTable th, #emiTable td {
-    border: 2px solid #3498db;
+    border: 1px solid #3498db;
     padding: 12px;
     text-align: center;
 }
@@ -82,7 +89,7 @@ button:hover {
 }
 
 #emiTable td {
-    background-color: #ecf0f1;
+    background-color: #eaf2f8;
 }
 
 /* Responsive design */
