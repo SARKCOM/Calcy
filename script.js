@@ -36,7 +36,7 @@ function calculateSimplifiedEMI() {
         row.insertCell(1).textContent = `₹${monthlyEMI.toFixed(2)}`;
 
         // Increment the payment date by one month
-        paymentDate = new Date(paymentDate.setMonth(paymentDate.getMonth() + 1));
+        paymentDate.setMonth(paymentDate.getMonth() + 1);
     }
 
     emiTable.style.display = 'table';
