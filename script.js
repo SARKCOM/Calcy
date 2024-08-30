@@ -2,7 +2,7 @@ function calculateEMI() {
     // Retrieve input values
     const loanAmount = parseFloat(document.getElementById('loanAmount').value);
     const annualInterestRate = parseFloat(document.getElementById('interestRate').value);
-    const loanTenure = parseFloat(document.getElementById('loanTenure').value);
+    const loanTenure = parseInt(document.getElementById('loanTenure').value, 10);
 
     // Validate input values
     if (isNaN(loanAmount) || isNaN(annualInterestRate) || isNaN(loanTenure) || loanAmount <= 0 || annualInterestRate <= 0 || loanTenure <= 0) {
@@ -12,11 +12,10 @@ function calculateEMI() {
 
     // Convert annual interest rate to monthly and tenure to months
     const monthlyInterestRate = annualInterestRate / 12 / 100;
-    const totalMonths = loanTenure * 12;
 
     // EMI calculation formula
-    const emi = (loanAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, totalMonths)) /
-                (Math.pow(1 + monthlyInterestRate, totalMonths) - 1);
+    const emi = (loanAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, loanTenure)) /
+                (Math.pow(1 + monthlyInterestRate, loanTenure) - 1);
 
     // Display EMI result
     document.getElementById('result').innerHTML = `Your EMI is ₹${emi.toFixed(2)}`;
@@ -27,7 +26,7 @@ function calculateEMI() {
     emiTableBody.innerHTML = '';
 
     const startDate = new Date();
-    for (let i = 0; i < totalMonths; i++) {
+    for (let i = 0; i < loanTenure; i++) {
         const paymentDate = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
         const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + i + 1, 0);
         
