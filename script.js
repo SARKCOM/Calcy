@@ -32,7 +32,7 @@ function calculateSimplifiedEMI() {
     let paymentDate = startDate;
     for (let i = 0; i < loanTenure; i++) {
         const row = emiTableBody.insertRow();
-        row.insertCell(0).textContent = paymentDate.toLocaleDateString();
+        row.insertCell(0).textContent = formatDate(paymentDate);
         row.insertCell(1).textContent = `₹${monthlyEMI.toFixed(2)}`;
 
         // Increment the payment date by one month
@@ -40,4 +40,11 @@ function calculateSimplifiedEMI() {
     }
 
     emiTable.style.display = 'table';
+}
+
+function formatDate(date) {
+    const day = date.getDate();
+    const month = date.toLocaleString('default', { month: 'short' });
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
 }
