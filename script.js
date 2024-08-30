@@ -29,12 +29,14 @@ function calculateSimplifiedEMI() {
     const emiTableBody = document.getElementById('emiTableBody');
     emiTableBody.innerHTML = '';
 
+    let paymentDate = startDate;
     for (let i = 0; i < loanTenure; i++) {
-        const paymentDate = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
-        
         const row = emiTableBody.insertRow();
         row.insertCell(0).textContent = paymentDate.toLocaleDateString();
         row.insertCell(1).textContent = `₹${monthlyEMI.toFixed(2)}`;
+
+        // Increment the payment date by one month
+        paymentDate = new Date(paymentDate.setMonth(paymentDate.getMonth() + 1));
     }
 
     emiTable.style.display = 'table';
