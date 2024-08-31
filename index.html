@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JPFintech EMI Calculator</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Lobster&display=swap"> <!-- Added a new font -->
 </head>
 <body>
     <div class="container">
-        <h1>Jamnalal Parekh Finance Company</h1>
+        <header>
+            <h1 class="brand-name">Jamnalal Parekh Finance Company</h1>
+        </header>
         <form id="emiForm">
             <div class="input-group">
                 <label for="loanAmount">Loan Amount:</label>
@@ -27,7 +29,7 @@
                 <label for="startDate">Start Date of EMI:</label>
                 <input type="date" id="startDate" required>
             </div>
-            <button type="button" onclick="calculateSimplifiedEMI()">Calculate EMI</button>
+            <button type="button" class="calculate-btn" onclick="calculateSimplifiedEMI()">Calculate EMI</button>
         </form>
         <div id="result"></div>
         <table id="emiTable" style="display:none;">
