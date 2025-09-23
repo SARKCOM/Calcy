@@ -1,81 +1,238 @@
-<!DOCTYPE html>
+<!--
+EMI Calculator - single-file HTML/CSS/JS
+Drop this file into a GitHub repo as `index.html` and enable GitHub Pages (branch: main or gh-pages)
+
+Features:
+- Inputs: loan amount, annual interest rate, tenure (years + months), frequency (monthly by default)
+- Calculates EMI using standard formula
+- Shows total payment, total interest, and an amortization schedule
+- Allows exporting amortization table as CSV
+- Responsive, accessible, minimal dependencies (vanilla JS)
+
+How to publish on GitHub Pages:
+1. Create a repo (e.g., `emi-calculator`).
+2. Add this file as `index.html` and commit.
+3. Push to GitHub.
+4. In repo settings -> Pages, select the `main` branch and `/ (root)` folder, save. Your site will be available at `https://<username>.github.io/<repo>/`.
+
+
+Author: Generated for Gaurav
+-->
+
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JPFintech EMI Calculator</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Lobster&display=swap">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EMI Calculator</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#94a3b8;--accent:#10b981;--glass:rgba(255,255,255,0.03)}
+    *{box-sizing:border-box;font-family:Inter,-apple-system,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#071127 0%, #071833 60%);color:#e6eef8;display:flex;align-items:center;justify-content:center;padding:24px}
+    .container{width:100%;max-width:980px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:16px;padding:24px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+    header{display:flex;align-items:center;gap:16px}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:4px 0 18px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .card{background:var(--card);padding:18px;border-radius:12px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type="number"], input[type="text"], select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit}
+    .row{display:flex;gap:10px}
+    .row > *{flex:1}
+    .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),#06b6d4);cursor:pointer;color:#031024;font-weight:600}
+    .muted{color:var(--muted);font-size:13px}
+    .result{display:flex;flex-direction:column;gap:8px}
+    .big{font-size:22px;font-weight:700}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px 6px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.03);font-size:13px}
+    th{text-align:left;color:var(--muted);font-weight:600}
+    .small{font-size:12px;color:var(--muted)}
+    .actions{display:flex;gap:8px;align-items:center}
+    footer{margin-top:12px;color:var(--muted);font-size:13px}
+    @media (max-width:880px){.grid{grid-template-columns:1fr;}.card{padding:14px}}
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <img src="signature logo.png" alt="Company Logo" class="logo">
-        </header>
-        
-        <h1>Scheme 1</h1>
-        <form id="emiForm1">
-            <div class="input-group">
-                <label for="loanAmount1">Loan Amount:</label>
-                <input type="number" id="loanAmount1" value="60000" required>
-            </div>
-            <div class="input-group">
-                <label for="interestRate1">Interest Rate (% per annum):</label>
-                <input type="number" id="interestRate1" value="15" required readonly>
-            </div>
-            <div class="input-group">
-                <label for="loanTenure1">Tenure (months):</label>
-                <input type="number" id="loanTenure1" value="24" required>
-            </div>
-            <div class="input-group">
-                <label for="startDate1">Start Date of EMI:</label>
-                <input type="date" id="startDate1" required>
-            </div>
-            <button type="button" class="calculate-btn" onclick="calculateSimplifiedEMI()">Calculate EMI</button>
-        </form>
-        <div id="result1"></div>
-        <table id="emiTable1" style="display:none;">
-            <thead>
-                <tr>
-                    <th>Payment Date</th>
-                    <th>EMI Amount (₹)</th>
-                </tr>
-            </thead>
-            <tbody id="emiTableBody1"></tbody>
-        </table>
+  <div class="container">
+    <header>
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden><rect width="24" height="24" rx="6" fill="#0ea5a3"/><path d="M7 12h10M7 8h10M7 16h6" stroke="#052025" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>
+        <h1>EMI Calculator</h1>
+        <p class="lead">Calculate monthly EMI, total payment, total interest and view an amortization schedule. Copy to your GitHub repo as <code>index.html</code>.</p>
+      </div>
+    </header>
 
-        <h1>Scheme 2</h1>
-        <form id="emiForm2">
-            <div class="input-group">
-                <label for="loanAmount2">Loan Amount:</label>
-                <input type="number" id="loanAmount2" value="60000" required>
+    <div class="grid" style="margin-top:18px">
+      <div class="card" aria-labelledby="inputs">
+        <h2 id="inputs" style="margin:0 0 8px">Loan details</h2>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:150px">
+            <label for="amount">Loan amount (₹)</label>
+            <input id="amount" type="number" min="0" step="1000" value="500000" aria-describedby="amountHelp" />
+            <div id="amountHelp" class="small">Enter principal amount</div>
+          </div>
+          <div style="width:140px">
+            <label for="rate">Annual interest (%)</label>
+            <input id="rate" type="number" min="0" step="0.01" value="8.5" />
+          </div>
+          <div style="width:120px">
+            <label for="years">Years</label>
+            <input id="years" type="number" min="0" step="1" value="5" />
+          </div>
+          <div style="width:120px">
+            <label for="months">Months</label>
+            <input id="months" type="number" min="0" max="11" step="1" value="0" />
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:14px;align-items:center">
+          <button id="calc" class="btn">Calculate EMI</button>
+          <button id="reset" class="btn" style="background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.04);">Reset</button>
+          <div style="flex:1"></div>
+          <div class="small muted">Frequency: Monthly</div>
+        </div>
+
+        <div style="margin-top:14px" class="result" aria-live="polite">
+          <div>Total EMI: <span id="emi" class="big">—</span></div>
+          <div>Total Payment: <span id="totalPayment">—</span> <span class="small muted">(Principal + Interest)</span></div>
+          <div>Total Interest: <span id="totalInterest">—</span></div>
+        </div>
+
+        <div style="margin-top:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="muted">Amortization schedule</div>
+            <div class="actions">
+              <button id="downloadCsv" class="btn" style="padding:8px 10px;font-size:13px">Export CSV</button>
             </div>
-            <div class="input-group">
-                <label for="interestRate2">Interest Rate (% per annum):</label>
-                <!-- Changed from 12 → 13 -->
-                <input type="number" id="interestRate2" value="13" required readonly>
-            </div>
-            <div class="input-group">
-                <label for="loanTenure2">Tenure (months):</label>
-                <input type="number" id="loanTenure2" value="24" required>
-            </div>
-            <div class="input-group">
-                <label for="startDate2">Start Date of EMI:</label>
-                <input type="date" id="startDate2" required>
-            </div>
-            <button type="button" class="calculate-btn" onclick="calculateSimplifiedEMI()">Calculate EMI</button>
-        </form>
-        <div id="result2"></div>
-        <table id="emiTable2" style="display:none;">
-            <thead>
-                <tr>
-                    <th>Payment Date</th>
-                    <th>EMI Amount (₹)</th>
-                </tr>
-            </thead>
-            <tbody id="emiTableBody2"></tbody>
-        </table>
+          </div>
+          <div style="max-height:300px;overflow:auto;margin-top:10px">
+            <table id="schedule" role="table" aria-label="amortization schedule">
+              <thead>
+                <tr><th>Month</th><th>EMI (₹)</th><th>Principal (₹)</th><th>Interest (₹)</th><th>Balance (₹)</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Quick tips & notes</h3>
+        <ul class="muted">
+          <li>EMI = P * r * (1+r)^n / ((1+r)^n - 1), where r is monthly rate and n is total months.</li>
+          <li>Use GitHub Pages to publish instantly: add this file as <code>index.html</code> in repo root.</li>
+          <li>The amortization schedule assumes fixed monthly payments and constant interest rate.</li>
+        </ul>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:12px 0" />
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div><strong>How to add to GitHub</strong>
+            <div class="small muted" style="margin-top:6px">Commands (run in your project folder):</div>
+            <pre class="small" style="background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;color:var(--muted)
+">git init
+git add index.html
+git commit -m "Add EMI calculator"
+git branch -M main
+git remote add origin https://github.com/&lt;username&gt;/emi-calculator.git
+git push -u origin main</pre>
+          </div>
+
+          <div>
+            <strong>Want enhancements?</strong>
+            <div class="small muted">I can provide a React version, add currency selector, loan comparison, or server-side storage for user scenarios.</div>
+          </div>
+        </div>
+
+        <footer>
+          Built with ♥ — tweak styles and copy freely. If you want a repo-ready README or CI workflow, tell me what you prefer.
+        </footer>
+      </div>
     </div>
-    <script src="script.js"></script>
+  </div>
+
+  <script>
+    // Helpers
+    const $ = id => document.getElementById(id);
+    const fmt = n => Number(n).toLocaleString('en-IN', {maximumFractionDigits:2});
+
+    function calcEMI(P, annualRate, months){
+      const r = annualRate / 12 / 100; // monthly rate
+      if (r === 0) return P / months; // zero interest
+      const n = months;
+      const emi = P * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+      return emi;
+    }
+
+    function buildSchedule(P, annualRate, months, emi){
+      const r = annualRate / 12 / 100;
+      let balance = P;
+      const rows = [];
+      for(let m = 1; m <= months; m++){
+        const interest = balance * r;
+        let principal = emi - interest;
+        // last payment adjustment to avoid negative residuals due to rounding
+        if (m === months) principal = balance;
+        balance = Math.max(0, balance - principal);
+        rows.push({month:m, emi, principal, interest, balance});
+      }
+      return rows;
+    }
+
+    function renderSchedule(rows){
+      const tbody = document.querySelector('#schedule tbody');
+      tbody.innerHTML = '';
+      for(const r of rows){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td style=\"text-align:left\">${r.month}</td><td>${fmt(r.emi)}</td><td>${fmt(r.principal)}</td><td>${fmt(r.interest)}</td><td>${fmt(r.balance)}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function downloadCsv(rows){
+      const cols = ['Month','EMI','Principal','Interest','Balance'];
+      let csv = cols.join(',') + '\n';
+      for(const r of rows){
+        csv += [r.month, r.emi.toFixed(2), r.principal.toFixed(2), r.interest.toFixed(2), r.balance.toFixed(2)].join(',') + '\n';
+      }
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'amortization.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    // UI wiring
+    function doCalculate(){
+      const P = parseFloat($('amount').value) || 0;
+      const rate = parseFloat($('rate').value) || 0;
+      const years = parseInt($('years').value) || 0;
+      const months = parseInt($('months').value) || 0;
+      const totalMonths = years * 12 + months;
+      if (totalMonths <= 0 || P <= 0){
+        alert('Please enter valid loan amount and tenure.'); return;
+      }
+      const emi = calcEMI(P, rate, totalMonths);
+      const schedule = buildSchedule(P, rate, totalMonths, emi);
+      const totalPayment = emi * totalMonths;
+      const totalInterest = totalPayment - P;
+
+      $('emi').textContent = '₹ ' + fmt(emi);
+      $('totalPayment').textContent = '₹ ' + fmt(totalPayment);
+      $('totalInterest').textContent = '₹ ' + fmt(totalInterest);
+      renderSchedule(schedule);
+
+      // attach csv action
+      $('downloadCsv').onclick = () => downloadCsv(schedule);
+    }
+
+    $('calc').addEventListener('click', doCalculate);
+    $('reset').addEventListener('click', ()=>{
+      $('amount').value = 500000; $('rate').value = 8.5; $('years').value = 5; $('months').value = 0;
+      document.querySelector('#schedule tbody').innerHTML = '';
+      $('emi').textContent = '—'; $('totalPayment').textContent = '—'; $('totalInterest').textContent = '—';
+    });
+
+    // auto-calc on load
+    window.addEventListener('load', doCalculate);
+  </script>
 </body>
 </html>
