@@ -1,21 +1,19 @@
 <!--
-EMI Calculator - single-file HTML/CSS/JS
-Drop this file into a GitHub repo as `index.html` and enable GitHub Pages (branch: main or gh-pages)
+EMI Calculator — Flat Method (Preset Rates)
+Fixed: removed stray raw line breaks in JS string literals (CSV builder), added test harness and robust parsing.
 
 Features:
-- Inputs: loan amount, annual interest rate, tenure (years + months), frequency (monthly by default)
-- Calculates EMI using standard formula
-- Shows total payment, total interest, and an amortization schedule
-- Allows exporting amortization table as CSV
-- Responsive, accessible, minimal dependencies (vanilla JS)
+- Inputs: loan amount and preset interest-rate dropdown (15%, 13%, 18%)
+- Tenure options change based on selected rate:
+  - 15% -> tenure: 12, 18, 24, 30 months (interest months = same as tenure)
+  - 13% -> tenure: 11, 17, 23, 29 months (interest months = tenure + 1)
+  - 18% -> tenure: 6 months (interest months = 6)
+- Calculates EMI using flat interest method with special mapping rules
+- Shows EMI, total payment, total interest, explicit note which months were used to compute interest
+- Export amortization table as CSV (fixed newline handling)
+- Responsive layout optimized for mobile viewing
 
-How to publish on GitHub Pages:
-1. Create a repo (e.g., `emi-calculator`).
-2. Add this file as `index.html` and commit.
-3. Push to GitHub.
-4. In repo settings -> Pages, select the `main` branch and `/ (root)` folder, save. Your site will be available at `https://<username>.github.io/<repo>/`.
-
-
+Company: Jamnalal Parekh Finance, Jagdalpur — Mobile: 8718900100
 Author: Generated for Gaurav
 -->
 
@@ -24,88 +22,112 @@ Author: Generated for Gaurav
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EMI Calculator</title>
+  <title>Jamnalal Parekh Finance — EMI Calculator</title>
   <style>
-    :root{--bg:#0f1724;--card:#0b1220;--muted:#94a3b8;--accent:#10b981;--glass:rgba(255,255,255,0.03)}
-    *{box-sizing:border-box;font-family:Inter,-apple-system,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
-    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#071127 0%, #071833 60%);color:#e6eef8;display:flex;align-items:center;justify-content:center;padding:24px}
-    .container{width:100%;max-width:980px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:16px;padding:24px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
-    header{display:flex;align-items:center;gap:16px}
-    h1{margin:0;font-size:20px}
-    p.lead{margin:4px 0 18px;color:var(--muted)}
+    :root{
+      --bg:#0b1220; --card:#0f1724; --muted:#94a3b8; --accent:#10b981; --glass:rgba(255,255,255,0.03);
+      --accent-2:#06b6d4; --text:#e6eef8;
+    }
+    *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
+    html,body{height:100%;}
+    body{margin:0;background:linear-gradient(180deg,#071127 0%, #071833 70%);color:var(--text);display:flex;align-items:flex-start;justify-content:center;padding:18px}
+    .wrap{width:100%;max-width:980px}
+    .brand{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .brand .left{display:flex;gap:12px;align-items:center}
+    .logo{width:54px;height:54px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#022; font-weight:700}
+    .company{line-height:1}
+    .company h2{margin:0;font-size:18px}
+    .company p{margin:2px 0 0;color:var(--muted);font-size:13px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:18px;box-shadow:0 10px 40px rgba(2,6,23,0.6)}
+
     .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
-    .card{background:var(--card);padding:18px;border-radius:12px}
+    @media (max-width:820px){.grid{grid-template-columns:1fr}}
+
+    .form{background:var(--card);padding:16px;border-radius:12px}
     label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-    input[type="number"], input[type="text"], select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit}
-    .row{display:flex;gap:10px}
-    .row > *{flex:1}
-    .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),#06b6d4);cursor:pointer;color:#031024;font-weight:600}
-    .muted{color:var(--muted);font-size:13px}
-    .result{display:flex;flex-direction:column;gap:8px}
-    .big{font-size:22px;font-weight:700}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
+    input[type="number"], select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit;font-size:15px}
+    .row{display:flex;gap:10px;align-items:end}
+    .row .col{flex:1}
+    .actions{display:flex;gap:10px;align-items:center;margin-top:12px}
+    .btn{padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));cursor:pointer;color:#022;font-weight:700}
+
+    .resultCard{background:var(--card);padding:16px;border-radius:12px}
+    .resultTop{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .resultTop .values{display:flex;flex-direction:column}
+    .emiBig{font-size:26px;font-weight:800}
+    .note{color:var(--muted);font-size:13px}
+
+    table{width:100%;border-collapse:collapse;margin-top:12px;background:transparent}
     th,td{padding:8px 6px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.03);font-size:13px}
     th{text-align:left;color:var(--muted);font-weight:600}
-    .small{font-size:12px;color:var(--muted)}
-    .actions{display:flex;gap:8px;align-items:center}
-    footer{margin-top:12px;color:var(--muted);font-size:13px}
-    @media (max-width:880px){.grid{grid-template-columns:1fr;}.card{padding:14px}}
+
+    footer{margin-top:12px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;align-items:center}
+    .contact{font-weight:600}
+    pre.small{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;color:var(--muted);overflow:auto;margin-top:10px}
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden><rect width="24" height="24" rx="6" fill="#0ea5a3"/><path d="M7 12h10M7 8h10M7 16h6" stroke="#052025" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div>
-        <h1>EMI Calculator</h1>
-        <p class="lead">Calculate monthly EMI, total payment, total interest and view an amortization schedule. Copy to your GitHub repo as <code>index.html</code>.</p>
+  <div class="wrap">
+    <div class="brand">
+      <div class="left">
+        <div class="logo">JP</div>
+        <div class="company">
+          <h2>Jamnalal Parekh Finance</h2>
+          <p>Jagdalpur — Mobile: 8718900100</p>
+        </div>
       </div>
-    </header>
+      <div class="contact note">Simple EMI calculator — Flat interest</div>
+    </div>
 
-    <div class="grid" style="margin-top:18px">
-      <div class="card" aria-labelledby="inputs">
-        <h2 id="inputs" style="margin:0 0 8px">Loan details</h2>
-        <div style="display:flex;gap:12px;flex-wrap:wrap">
-          <div style="flex:1;min-width:150px">
-            <label for="amount">Loan amount (₹)</label>
-            <input id="amount" type="number" min="0" step="1000" value="500000" aria-describedby="amountHelp" />
-            <div id="amountHelp" class="small">Enter principal amount</div>
+    <div class="grid">
+      <div class="card form" aria-labelledby="loanform">
+        <h3 id="loanform" style="margin:0 0 10px">Loan details</h3>
+
+        <label for="amount">Loan amount (₹)</label>
+        <input id="amount" type="number" min="0" step="100" value="10000" />
+
+        <div class="row" style="margin-top:10px">
+          <div class="col">
+            <label for="rateSelect">Interest rate</label>
+            <select id="rateSelect">
+              <option value="15">15%</option>
+              <option value="13">13%</option>
+              <option value="18">18%</option>
+            </select>
           </div>
-          <div style="width:140px">
-            <label for="rate">Annual interest (%)</label>
-            <input id="rate" type="number" min="0" step="0.01" value="8.5" />
-          </div>
-          <div style="width:120px">
-            <label for="years">Years</label>
-            <input id="years" type="number" min="0" step="1" value="5" />
-          </div>
-          <div style="width:120px">
-            <label for="months">Months</label>
-            <input id="months" type="number" min="0" max="11" step="1" value="0" />
+          <div style="width:160px">
+            <label for="tenureSelect">Tenure (months)</label>
+            <select id="tenureSelect"></select>
           </div>
         </div>
 
-        <div style="display:flex;gap:10px;margin-top:14px;align-items:center">
-          <button id="calc" class="btn">Calculate EMI</button>
-          <button id="reset" class="btn" style="background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.04);">Reset</button>
+        <div class="actions">
+          <button id="calc" class="btn">Calculate</button>
+          <button id="reset" class="btn" style="background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.06);">Reset</button>
           <div style="flex:1"></div>
-          <div class="small muted">Frequency: Monthly</div>
+          <button id="downloadCsv" class="btn" style="padding:8px 12px;font-weight:600">Export CSV</button>
         </div>
 
-        <div style="margin-top:14px" class="result" aria-live="polite">
-          <div>Total EMI: <span id="emi" class="big">—</span></div>
-          <div>Total Payment: <span id="totalPayment">—</span> <span class="small muted">(Principal + Interest)</span></div>
-          <div>Total Interest: <span id="totalInterest">—</span></div>
-        </div>
+        <div style="margin-top:12px" class="note">Tip: This uses flat interest (interest on original principal). Contact Jamnalal Parekh Finance for loan options.</div>
+      </div>
 
-        <div style="margin-top:14px">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div class="muted">Amortization schedule</div>
-            <div class="actions">
-              <button id="downloadCsv" class="btn" style="padding:8px 10px;font-size:13px">Export CSV</button>
-            </div>
+      <div class="card resultCard">
+        <div class="resultTop">
+          <div class="values">
+            <div class="note">Monthly EMI</div>
+            <div id="emi" class="emiBig">—</div>
+            <div id="interestNote" class="note" style="margin-top:6px">Interest months used: —</div>
           </div>
-          <div style="max-height:300px;overflow:auto;margin-top:10px">
+          <div style="text-align:right">
+            <div class="note">Total Payment</div>
+            <div id="totalPayment" style="font-weight:700;font-size:16px">—</div>
+            <div class="note" style="margin-top:6px">Total Interest: <span id="totalInterest">—</span></div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="muted">Amortization schedule</div>
+          <div style="max-height:320px;overflow:auto;margin-top:8px">
             <table id="schedule" role="table" aria-label="amortization schedule">
               <thead>
                 <tr><th>Month</th><th>EMI (₹)</th><th>Principal (₹)</th><th>Interest (₹)</th><th>Balance (₹)</th></tr>
@@ -114,125 +136,138 @@ Author: Generated for Gaurav
             </table>
           </div>
         </div>
-      </div>
 
-      <div class="card">
-        <h3 style="margin-top:0">Quick tips & notes</h3>
-        <ul class="muted">
-          <li>EMI = P * r * (1+r)^n / ((1+r)^n - 1), where r is monthly rate and n is total months.</li>
-          <li>Use GitHub Pages to publish instantly: add this file as <code>index.html</code> in repo root.</li>
-          <li>The amortization schedule assumes fixed monthly payments and constant interest rate.</li>
-        </ul>
-
-        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:12px 0" />
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div><strong>How to add to GitHub</strong>
-            <div class="small muted" style="margin-top:6px">Commands (run in your project folder):</div>
-            <pre class="small" style="background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;color:var(--muted)
-">git init
-git add index.html
-git commit -m "Add EMI calculator"
-git branch -M main
-git remote add origin https://github.com/&lt;username&gt;/emi-calculator.git
-git push -u origin main</pre>
-          </div>
-
-          <div>
-            <strong>Want enhancements?</strong>
-            <div class="small muted">I can provide a React version, add currency selector, loan comparison, or server-side storage for user scenarios.</div>
-          </div>
-        </div>
+        <pre id="testResults" class="small" aria-hidden="false"></pre>
 
         <footer>
-          Built with ♥ — tweak styles and copy freely. If you want a repo-ready README or CI workflow, tell me what you prefer.
+          <div class="small muted">Built for Jamnalal Parekh Finance</div>
+          <div class="small muted">Jagdalpur • 8718900100</div>
         </footer>
       </div>
     </div>
   </div>
 
   <script>
-    // Helpers
-    const $ = id => document.getElementById(id);
-    const fmt = n => Number(n).toLocaleString('en-IN', {maximumFractionDigits:2});
+    (function(){
+      const $ = id => document.getElementById(id);
+      const fmt = n => Number(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
 
-    function calcEMI(P, annualRate, months){
-      const r = annualRate / 12 / 100; // monthly rate
-      if (r === 0) return P / months; // zero interest
-      const n = months;
-      const emi = P * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
-      return emi;
-    }
-
-    function buildSchedule(P, annualRate, months, emi){
-      const r = annualRate / 12 / 100;
-      let balance = P;
-      const rows = [];
-      for(let m = 1; m <= months; m++){
-        const interest = balance * r;
-        let principal = emi - interest;
-        // last payment adjustment to avoid negative residuals due to rounding
-        if (m === months) principal = balance;
-        balance = Math.max(0, balance - principal);
-        rows.push({month:m, emi, principal, interest, balance});
+      function calcFlatMapped(P, annualRate, emiMonths, interestMonths){
+        const totalInterest = (P * annualRate * (interestMonths/12)) / 100;
+        const totalPayment = P + totalInterest;
+        const emi = totalPayment / emiMonths;
+        const monthlyPrincipal = P / emiMonths;
+        const monthlyInterest = totalInterest / emiMonths;
+        const schedule = [];
+        let balance = P;
+        for(let m=1;m<=emiMonths;m++){
+          balance = Math.max(0, balance - monthlyPrincipal);
+          schedule.push({month:m, emi, principal:monthlyPrincipal, interest:monthlyInterest, balance});
+        }
+        return {emi, totalPayment, totalInterest, schedule};
       }
-      return rows;
-    }
 
-    function renderSchedule(rows){
-      const tbody = document.querySelector('#schedule tbody');
-      tbody.innerHTML = '';
-      for(const r of rows){
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td style=\"text-align:left\">${r.month}</td><td>${fmt(r.emi)}</td><td>${fmt(r.principal)}</td><td>${fmt(r.interest)}</td><td>${fmt(r.balance)}</td>`;
-        tbody.appendChild(tr);
+      function populateTenures(rate){
+        const sel = $('tenureSelect');
+        if (!sel) return;
+        sel.innerHTML = '';
+        let options = [];
+        if (Number(rate) === 15){ options = [12,18,24,30]; }
+        else if (Number(rate) === 13){ options = [11,17,23,29]; }
+        else if (Number(rate) === 18){ options = [6]; }
+        options.forEach(v => {
+          const opt = document.createElement('option'); opt.value = String(v); opt.text = String(v);
+          sel.appendChild(opt);
+        });
+        if (sel.options.length) sel.selectedIndex = 0;
       }
-    }
 
-    function downloadCsv(rows){
-      const cols = ['Month','EMI','Principal','Interest','Balance'];
-      let csv = cols.join(',') + '\n';
-      for(const r of rows){
-        csv += [r.month, r.emi.toFixed(2), r.principal.toFixed(2), r.interest.toFixed(2), r.balance.toFixed(2)].join(',') + '\n';
+      function getInterestMonthsFor(rate, emiMonths){
+        rate = Number(rate);
+        if (rate === 15) return emiMonths;
+        if (rate === 13) return emiMonths + 1;
+        if (rate === 18) return emiMonths; // for 18% we now use same months (6)
+        return emiMonths;
       }
-      const blob = new Blob([csv], {type:'text/csv'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'amortization.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    }
 
-    // UI wiring
-    function doCalculate(){
-      const P = parseFloat($('amount').value) || 0;
-      const rate = parseFloat($('rate').value) || 0;
-      const years = parseInt($('years').value) || 0;
-      const months = parseInt($('months').value) || 0;
-      const totalMonths = years * 12 + months;
-      if (totalMonths <= 0 || P <= 0){
-        alert('Please enter valid loan amount and tenure.'); return;
+      function buildScheduleTable(rows){
+        const tbody = document.querySelector('#schedule tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        for(const r of rows){
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td style=\"text-align:left\">${r.month}</td><td>${fmt(r.emi)}</td><td>${fmt(r.principal)}</td><td>${fmt(r.interest)}</td><td>${fmt(r.balance)}</td>`;
+          tbody.appendChild(tr);
+        }
       }
-      const emi = calcEMI(P, rate, totalMonths);
-      const schedule = buildSchedule(P, rate, totalMonths, emi);
-      const totalPayment = emi * totalMonths;
-      const totalInterest = totalPayment - P;
 
-      $('emi').textContent = '₹ ' + fmt(emi);
-      $('totalPayment').textContent = '₹ ' + fmt(totalPayment);
-      $('totalInterest').textContent = '₹ ' + fmt(totalInterest);
-      renderSchedule(schedule);
+      function downloadCsv(rows){
+        try{
+          if (!rows || !rows.length) return alert('No schedule to export');
+          const cols = ['Month','EMI','Principal','Interest','Balance'];
+          let csv = cols.join(',') + '\n';
+          for(const r of rows){
+            csv += [r.month, r.emi.toFixed(2), r.principal.toFixed(2), r.interest.toFixed(2), r.balance.toFixed(2)].join(',') + '\n';
+          }
+          const blob = new Blob([csv], {type:'text/csv'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = 'amortization.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        }catch(err){ console.error('CSV export error', err); alert('Failed to export CSV: ' + err.message); }
+      }
 
-      // attach csv action
-      $('downloadCsv').onclick = () => downloadCsv(schedule);
-    }
+      function doCalculate(){
+        const P = parseFloat($('amount').value) || 0;
+        const rate = parseFloat($('rateSelect').value) || 0;
+        const emiMonths = parseInt($('tenureSelect').value, 10) || 0;
+        const interestMonths = getInterestMonthsFor(rate, emiMonths);
+        if (emiMonths <= 0 || P <= 0){ alert('Enter a valid amount and tenure.'); return; }
+        const res = calcFlatMapped(P, rate, emiMonths, interestMonths);
+        $('emi').textContent = '₹ ' + fmt(res.emi);
+        $('totalPayment').textContent = '₹ ' + fmt(res.totalPayment);
+        $('totalInterest').textContent = '₹ ' + fmt(res.totalInterest);
+        buildScheduleTable(res.schedule);
+        const v = $('interestNote'); if (v) v.textContent = `Interest calculated for ${interestMonths} month(s) while EMI is spread over ${emiMonths} month(s).`;
+      }
 
-    $('calc').addEventListener('click', doCalculate);
-    $('reset').addEventListener('click', ()=>{
-      $('amount').value = 500000; $('rate').value = 8.5; $('years').value = 5; $('months').value = 0;
-      document.querySelector('#schedule tbody').innerHTML = '';
-      $('emi').textContent = '—'; $('totalPayment').textContent = '—'; $('totalInterest').textContent = '—';
-    });
+      function runTests(){
+        const cases = [
+          {label:'15% / 12m (canonical)', P:10000, rate:15, emiMonths:12, expectEmi:958.33},
+          {label:'13% / 11m (interest for 12m)', P:10000, rate:13, emiMonths:11, expectEmi:1027.27},
+          {label:'18% / 6m (interest for 6m)', P:10000, rate:18, emiMonths:6, expectEmi:1966.67}
+        ];
+        const out = [];
+        for(const c of cases){
+          const interestMonths = getInterestMonthsFor(c.rate, c.emiMonths);
+          const r = calcFlatMapped(c.P, c.rate, c.emiMonths, interestMonths);
+          const pass = Math.abs(r.emi - c.expectEmi) < 0.6; // tolerance
+          out.push(`${c.label} => EMI=${fmt(r.emi)} expected≈${c.expectEmi} => ${pass? 'PASS':'FAIL'}`);
+          console.log(out[out.length-1]);
+        }
+        const pre = $('testResults'); if (pre) pre.textContent = out.join('\n');
+      }
 
-    // auto-calc on load
-    window.addEventListener('load', doCalculate);
+      document.addEventListener('DOMContentLoaded', ()=>{
+        populateTenures(15);
+        const t = $('tenureSelect'); if (t) t.value = t.options.length ? t.options[0].value : 0;
+        $('rateSelect').addEventListener('change', ()=>{ populateTenures($('rateSelect').value); });
+        $('calc').addEventListener('click', doCalculate);
+        $('downloadCsv').addEventListener('click', ()=>{
+          const tbody = document.querySelector('#schedule tbody');
+          const rows = Array.from(tbody.querySelectorAll('tr')).map(tr=>({
+            month: tr.children[0].textContent.trim(), emi: parseFloat(tr.children[1].textContent.replace(/,/g,'')), principal: parseFloat(tr.children[2].textContent.replace(/,/g,'')), interest: parseFloat(tr.children[3].textContent.replace(/,/g,'')), balance: parseFloat(tr.children[4].textContent.replace(/,/g,''))
+          }));
+          downloadCsv(rows);
+        });
+        $('reset').addEventListener('click', ()=>{
+          $('amount').value = 10000; $('rateSelect').value = 15; populateTenures(15); const t = $('tenureSelect'); if (t) t.value = t.options.length ? t.options[0].value : 0;
+          document.querySelector('#schedule tbody').innerHTML = '';
+          $('emi').textContent = '—'; $('totalPayment').textContent = '—'; $('totalInterest').textContent = '—';
+          const v = $('interestNote'); if (v) v.textContent = '';
+        });
+        doCalculate();
+        runTests();
+      });
+    })();
   </script>
 </body>
 </html>
