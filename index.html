@@ -40,19 +40,36 @@ Author: Generated for Gaurav
     .company p{margin:2px 0 0;color:var(--muted);font-size:13px}
     .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:18px;box-shadow:0 10px 40px rgba(2,6,23,0.6)}
 
+    /* layout */
     .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
     @media (max-width:820px){.grid{grid-template-columns:1fr}}
 
     .form{background:var(--card);padding:16px;border-radius:12px}
     label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
     input[type="number"], select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit;font-size:15px}
-    .row{display:flex;gap:10px;align-items:end}
-    .row .col{flex:1}
-    .actions{display:flex;gap:10px;align-items:center;margin-top:12px}
+
+    /* .row contains inputs side-by-side on wide screens, stacked on small screens */
+    .row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+    .row .col{flex:1;min-width:0}
+    .row .fixed{width:160px;flex:0 0 160px}
+    @media (max-width:520px){
+      .row{flex-direction:column;align-items:stretch}
+      .row .fixed{width:100%;flex:1}
+    }
+
+    /* actions: horizontal on wide, stacked on mobile */
+    .actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+    .actions .btn{white-space:nowrap}
+    @media (max-width:520px){
+      .actions{flex-direction:column;align-items:stretch}
+      .actions .btn{width:100%}
+    }
+
     .btn{padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));cursor:pointer;color:#022;font-weight:700}
 
     .resultCard{background:var(--card);padding:16px;border-radius:12px}
     .resultTop{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    @media (max-width:520px){.resultTop{flex-direction:column;align-items:flex-start}}
     .resultTop .values{display:flex;flex-direction:column}
     .emiBig{font-size:26px;font-weight:800}
     .note{color:var(--muted);font-size:13px}
@@ -95,7 +112,7 @@ Author: Generated for Gaurav
               <option value="18">18%</option>
             </select>
           </div>
-          <div style="width:160px">
+          <div class="fixed">
             <label for="tenureSelect">Tenure (months)</label>
             <select id="tenureSelect"></select>
           </div>
@@ -104,8 +121,7 @@ Author: Generated for Gaurav
         <div class="actions">
           <button id="calc" class="btn">Calculate</button>
           <button id="reset" class="btn" style="background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.06);">Reset</button>
-          <div style="flex:1"></div>
-          <button id="downloadCsv" class="btn" style="padding:8px 12px;font-weight:600">Export CSV</button>
+          <button id="downloadCsv" class="btn" style="padding:8px 12px;font-weight:600;">Export CSV</button>
         </div>
 
         <div style="margin-top:12px" class="note">Tip: This uses flat interest (interest on original principal). Contact Jamnalal Parekh Finance for loan options.</div>
@@ -152,6 +168,7 @@ Author: Generated for Gaurav
       const $ = id => document.getElementById(id);
       const fmt = n => Number(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
 
+      // Flat interest calculation with mapping rules
       function calcFlatMapped(P, annualRate, emiMonths, interestMonths){
         const totalInterest = (P * annualRate * (interestMonths/12)) / 100;
         const totalPayment = P + totalInterest;
@@ -167,14 +184,15 @@ Author: Generated for Gaurav
         return {emi, totalPayment, totalInterest, schedule};
       }
 
+      // Populate tenure dropdown based on rate
       function populateTenures(rate){
         const sel = $('tenureSelect');
         if (!sel) return;
         sel.innerHTML = '';
         let options = [];
-        if (Number(rate) === 15){ options = [12,18,24,30]; }
-        else if (Number(rate) === 13){ options = [11,17,23,29]; }
-        else if (Number(rate) === 18){ options = [6]; }
+        if (Number(rate) === 15) options = [12,18,24,30];
+        else if (Number(rate) === 13) options = [11,17,23,29];
+        else if (Number(rate) === 18) options = [6];
         options.forEach(v => {
           const opt = document.createElement('option'); opt.value = String(v); opt.text = String(v);
           sel.appendChild(opt);
@@ -182,25 +200,34 @@ Author: Generated for Gaurav
         if (sel.options.length) sel.selectedIndex = 0;
       }
 
+      // Mapping for interest months
       function getInterestMonthsFor(rate, emiMonths){
         rate = Number(rate);
         if (rate === 15) return emiMonths;
         if (rate === 13) return emiMonths + 1;
-        if (rate === 18) return emiMonths; // for 18% we now use same months (6)
+        if (rate === 18) return emiMonths; // 18% => interest months = emi months (6)
         return emiMonths;
       }
 
+      // Render amortization schedule
       function buildScheduleTable(rows){
         const tbody = document.querySelector('#schedule tbody');
         if (!tbody) return;
         tbody.innerHTML = '';
         for(const r of rows){
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td style=\"text-align:left\">${r.month}</td><td>${fmt(r.emi)}</td><td>${fmt(r.principal)}</td><td>${fmt(r.interest)}</td><td>${fmt(r.balance)}</td>`;
+          tr.innerHTML = `
+            <td style="text-align:left">${r.month}</td>
+            <td>${fmt(r.emi)}</td>
+            <td>${fmt(r.principal)}</td>
+            <td>${fmt(r.interest)}</td>
+            <td>${fmt(r.balance)}</td>
+          `;
           tbody.appendChild(tr);
         }
       }
 
+      // Build CSV safely using explicit '\n' newlines
       function downloadCsv(rows){
         try{
           if (!rows || !rows.length) return alert('No schedule to export');
@@ -215,6 +242,7 @@ Author: Generated for Gaurav
         }catch(err){ console.error('CSV export error', err); alert('Failed to export CSV: ' + err.message); }
       }
 
+      // Main calculation
       function doCalculate(){
         const P = parseFloat($('amount').value) || 0;
         const rate = parseFloat($('rateSelect').value) || 0;
@@ -229,11 +257,14 @@ Author: Generated for Gaurav
         const v = $('interestNote'); if (v) v.textContent = `Interest calculated for ${interestMonths} month(s) while EMI is spread over ${emiMonths} month(s).`;
       }
 
+      // Test harness (keeps existing tests; added extra cases)
       function runTests(){
         const cases = [
           {label:'15% / 12m (canonical)', P:10000, rate:15, emiMonths:12, expectEmi:958.33},
           {label:'13% / 11m (interest for 12m)', P:10000, rate:13, emiMonths:11, expectEmi:1027.27},
-          {label:'18% / 6m (interest for 6m)', P:10000, rate:18, emiMonths:6, expectEmi:1966.67}
+          {label:'18% / 6m (interest for 6m)', P:10000, rate:18, emiMonths:6, expectEmi:1816.67},
+          {label:'50k @13% / 17m', P:50000, rate:13, emiMonths:17, expectEmi:3514.71},
+          {label:'250k @15% / 24m', P:250000, rate:15, emiMonths:24, expectEmi:13541.67}
         ];
         const out = [];
         for(const c of cases){
@@ -246,6 +277,7 @@ Author: Generated for Gaurav
         const pre = $('testResults'); if (pre) pre.textContent = out.join('\n');
       }
 
+      // Wire up events and init
       document.addEventListener('DOMContentLoaded', ()=>{
         populateTenures(15);
         const t = $('tenureSelect'); if (t) t.value = t.options.length ? t.options[0].value : 0;
