@@ -1,305 +1,193 @@
-<!--
-EMI Calculator — Flat Method (Preset Rates)
-Fixed: removed stray raw line breaks in JS string literals (CSV builder), added test harness and robust parsing.
-
-Features:
-- Inputs: loan amount and preset interest-rate dropdown (15%, 13%, 18%)
-- Tenure options change based on selected rate:
-  - 15% -> tenure: 12, 18, 24, 30 months (interest months = same as tenure)
-  - 13% -> tenure: 11, 17, 23, 29 months (interest months = tenure + 1)
-  - 18% -> tenure: 6 months (interest months = 6)
-- Calculates EMI using flat interest method with special mapping rules
-- Shows EMI, total payment, total interest, explicit note which months were used to compute interest
-- Export amortization table as CSV (fixed newline handling)
-- Responsive layout optimized for mobile viewing
-
-Company: Jamnalal Parekh Finance, Jagdalpur — Mobile: 8718900100
-Author: Generated for Gaurav
--->
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Jamnalal Parekh Finance — EMI Calculator</title>
+
   <style>
     :root{
-      --bg:#0b1220; --card:#0f1724; --muted:#94a3b8; --accent:#10b981; --glass:rgba(255,255,255,0.03);
-      --accent-2:#06b6d4; --text:#e6eef8;
+      --bg:#0b1220; --card:#0f1724; --muted:#94a3b8;
+      --accent:#10b981; --accent-2:#06b6d4;
+      --text:#e6eef8; --glass:rgba(255,255,255,0.03);
     }
     *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
-    html,body{height:100%;}
-    body{margin:0;background:linear-gradient(180deg,#071127 0%, #071833 70%);color:var(--text);display:flex;align-items:flex-start;justify-content:center;padding:18px}
+    body{
+      margin:0; padding:18px;
+      background:linear-gradient(180deg,#071127,#071833);
+      color:var(--text); display:flex; justify-content:center;
+    }
     .wrap{width:100%;max-width:980px}
-    .brand{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-    .brand .left{display:flex;gap:12px;align-items:center}
-    .logo{width:54px;height:54px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#022; font-weight:700}
-    .company{line-height:1}
-    .company h2{margin:0;font-size:18px}
-    .company p{margin:2px 0 0;color:var(--muted);font-size:13px}
-    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:18px;box-shadow:0 10px 40px rgba(2,6,23,0.6)}
-
-    /* layout */
+    .brand{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .logo{width:54px;height:54px;border-radius:12px;
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      display:flex;align-items:center;justify-content:center;
+      color:#022;font-weight:700}
+    .card{background:var(--card);padding:16px;border-radius:12px}
     .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
-    @media (max-width:820px){.grid{grid-template-columns:1fr}}
-
-    .form{background:var(--card);padding:16px;border-radius:12px}
-    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-    input[type="number"], select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit;font-size:15px}
-
-    /* .row contains inputs side-by-side on wide screens, stacked on small screens */
-    .row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
-    .row .col{flex:1;min-width:0}
-    .row .fixed{width:160px;flex:0 0 160px}
-    @media (max-width:520px){
-      .row{flex-direction:column;align-items:stretch}
-      .row .fixed{width:100%;flex:1}
+    @media(max-width:820px){.grid{grid-template-columns:1fr}}
+    label{font-size:13px;color:var(--muted)}
+    input,select{
+      width:100%;padding:12px;border-radius:10px;
+      background:var(--glass);border:1px solid rgba(255,255,255,0.05);
+      color:var(--text)
     }
-
-    /* actions: horizontal on wide, stacked on mobile */
-    .actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
-    .actions .btn{white-space:nowrap}
-    @media (max-width:520px){
-      .actions{flex-direction:column;align-items:stretch}
-      .actions .btn{width:100%}
+    .row{display:flex;gap:10px;margin-top:10px}
+    .actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+    .btn{
+      padding:10px 14px;border-radius:10px;border:0;
+      background:linear-gradient(90deg,var(--accent),var(--accent-2));
+      color:#022;font-weight:700;cursor:pointer
     }
-
-    .btn{padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));cursor:pointer;color:#022;font-weight:700}
-
-    .resultCard{background:var(--card);padding:16px;border-radius:12px}
-    .resultTop{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    @media (max-width:520px){.resultTop{flex-direction:column;align-items:flex-start}}
-    .resultTop .values{display:flex;flex-direction:column}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05)}
+    th{color:var(--muted);text-align:left}
+    td{text-align:right}
     .emiBig{font-size:26px;font-weight:800}
     .note{color:var(--muted);font-size:13px}
-
-    table{width:100%;border-collapse:collapse;margin-top:12px;background:transparent}
-    th,td{padding:8px 6px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.03);font-size:13px}
-    th{text-align:left;color:var(--muted);font-weight:600}
-
-    footer{margin-top:12px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;align-items:center}
-    .contact{font-weight:600}
-    pre.small{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;color:var(--muted);overflow:auto;margin-top:10px}
   </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="brand">
-      <div class="left">
-        <div class="logo">JP</div>
-        <div class="company">
-          <h2>Jamnalal Parekh Finance</h2>
-          <p>Jagdalpur — Mobile: 8718900100</p>
-        </div>
-      </div>
-      <div class="contact note">Simple EMI calculator — Flat interest</div>
-    </div>
+<div class="wrap">
 
-    <div class="grid">
-      <div class="card form" aria-labelledby="loanform">
-        <h3 id="loanform" style="margin:0 0 10px">Loan details</h3>
-
-        <label for="amount">Loan amount (₹)</label>
-        <input id="amount" type="number" min="0" step="100" value="10000" />
-
-        <div class="row" style="margin-top:10px">
-          <div class="col">
-            <label for="rateSelect">Interest rate</label>
-            <select id="rateSelect">
-              <option value="15">15%</option>
-              <option value="13">13%</option>
-              <option value="18">18%</option>
-            </select>
-          </div>
-          <div class="fixed">
-            <label for="tenureSelect">Tenure (months)</label>
-            <select id="tenureSelect"></select>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button id="calc" class="btn">Calculate</button>
-          <button id="reset" class="btn" style="background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.06);">Reset</button>
-          <button id="downloadCsv" class="btn" style="padding:8px 12px;font-weight:600;">Export CSV</button>
-        </div>
-
-        <div style="margin-top:12px" class="note">Tip: This uses flat interest (interest on original principal). Contact Jamnalal Parekh Finance for loan options.</div>
-      </div>
-
-      <div class="card resultCard">
-        <div class="resultTop">
-          <div class="values">
-            <div class="note">Monthly EMI</div>
-            <div id="emi" class="emiBig">—</div>
-            <div id="interestNote" class="note" style="margin-top:6px">Interest months used: —</div>
-          </div>
-          <div style="text-align:right">
-            <div class="note">Total Payment</div>
-            <div id="totalPayment" style="font-weight:700;font-size:16px">—</div>
-            <div class="note" style="margin-top:6px">Total Interest: <span id="totalInterest">—</span></div>
-          </div>
-        </div>
-
-        <div style="margin-top:12px">
-          <div class="muted">Amortization schedule</div>
-          <div style="max-height:320px;overflow:auto;margin-top:8px">
-            <table id="schedule" role="table" aria-label="amortization schedule">
-              <thead>
-                <tr><th>Month</th><th>EMI (₹)</th><th>Principal (₹)</th><th>Interest (₹)</th><th>Balance (₹)</th></tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-
-        <pre id="testResults" class="small" aria-hidden="false"></pre>
-
-        <footer>
-          <div class="small muted">Built for Jamnalal Parekh Finance</div>
-          <div class="small muted">Jagdalpur • 8718900100</div>
-        </footer>
+  <div class="brand">
+    <div style="display:flex;gap:12px;align-items:center">
+      <div class="logo">JP</div>
+      <div>
+        <h2 style="margin:0">Jamnalal Parekh Finance</h2>
+        <p class="note" style="margin:2px 0 0">Jagdalpur — 8718900100</p>
       </div>
     </div>
+    <div class="note">Flat EMI Calculator</div>
   </div>
 
-  <script>
-    (function(){
-      const $ = id => document.getElementById(id);
-      const fmt = n => Number(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+  <div class="grid">
 
-      // Flat interest calculation with mapping rules
-      function calcFlatMapped(P, annualRate, emiMonths, interestMonths){
-        const totalInterest = (P * annualRate * (interestMonths/12)) / 100;
-        const totalPayment = P + totalInterest;
-        const emi = totalPayment / emiMonths;
-        const monthlyPrincipal = P / emiMonths;
-        const monthlyInterest = totalInterest / emiMonths;
-        const schedule = [];
-        let balance = P;
-        for(let m=1;m<=emiMonths;m++){
-          balance = Math.max(0, balance - monthlyPrincipal);
-          schedule.push({month:m, emi, principal:monthlyPrincipal, interest:monthlyInterest, balance});
-        }
-        return {emi, totalPayment, totalInterest, schedule};
-      }
+    <!-- FORM -->
+    <div class="card">
+      <label>Loan Amount (₹)</label>
+      <input id="amount" type="number" value="10000" step="100"/>
 
-      // Populate tenure dropdown based on rate
-      function populateTenures(rate){
-        const sel = $('tenureSelect');
-        if (!sel) return;
-        sel.innerHTML = '';
-        let options = [];
-        if (Number(rate) === 15) options = [12,18,24,30];
-        else if (Number(rate) === 13) options = [11,17,23,29];
-        else if (Number(rate) === 18) options = [6];
-        options.forEach(v => {
-          const opt = document.createElement('option'); opt.value = String(v); opt.text = String(v);
-          sel.appendChild(opt);
-        });
-        if (sel.options.length) sel.selectedIndex = 0;
-      }
+      <div class="row">
+        <div style="flex:1">
+          <label>Interest Rate</label>
+          <select id="rateSelect">
+            <option value="15">15%</option>
+            <option value="14">14%</option>
+            <option value="18">18%</option>
+          </select>
+        </div>
+        <div style="width:160px">
+          <label>Tenure (months)</label>
+          <select id="tenureSelect"></select>
+        </div>
+      </div>
 
-      // Mapping for interest months
-      function getInterestMonthsFor(rate, emiMonths){
-        rate = Number(rate);
-        if (rate === 15) return emiMonths;
-        if (rate === 13) return emiMonths + 1;
-        if (rate === 18) return emiMonths; // 18% => interest months = emi months (6)
-        return emiMonths;
-      }
+      <div class="actions">
+        <button class="btn" id="calc">Calculate</button>
+        <button class="btn" id="reset" style="background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.1)">Reset</button>
+      </div>
 
-      // Render amortization schedule
-      function buildScheduleTable(rows){
-        const tbody = document.querySelector('#schedule tbody');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        for(const r of rows){
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td style="text-align:left">${r.month}</td>
-            <td>${fmt(r.emi)}</td>
-            <td>${fmt(r.principal)}</td>
-            <td>${fmt(r.interest)}</td>
-            <td>${fmt(r.balance)}</td>
-          `;
-          tbody.appendChild(tr);
-        }
-      }
+      <p class="note" style="margin-top:10px">
+        Flat interest is calculated on original principal.
+      </p>
+    </div>
 
-      // Build CSV safely using explicit '\n' newlines
-      function downloadCsv(rows){
-        try{
-          if (!rows || !rows.length) return alert('No schedule to export');
-          const cols = ['Month','EMI','Principal','Interest','Balance'];
-          let csv = cols.join(',') + '\n';
-          for(const r of rows){
-            csv += [r.month, r.emi.toFixed(2), r.principal.toFixed(2), r.interest.toFixed(2), r.balance.toFixed(2)].join(',') + '\n';
-          }
-          const blob = new Blob([csv], {type:'text/csv'});
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a'); a.href = url; a.download = 'amortization.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-        }catch(err){ console.error('CSV export error', err); alert('Failed to export CSV: ' + err.message); }
-      }
+    <!-- RESULT -->
+    <div class="card">
+      <div>
+        <div class="note">Monthly EMI</div>
+        <div class="emiBig" id="emi">—</div>
+        <div class="note" id="interestNote"></div>
+      </div>
 
-      // Main calculation
-      function doCalculate(){
-        const P = parseFloat($('amount').value) || 0;
-        const rate = parseFloat($('rateSelect').value) || 0;
-        const emiMonths = parseInt($('tenureSelect').value, 10) || 0;
-        const interestMonths = getInterestMonthsFor(rate, emiMonths);
-        if (emiMonths <= 0 || P <= 0){ alert('Enter a valid amount and tenure.'); return; }
-        const res = calcFlatMapped(P, rate, emiMonths, interestMonths);
-        $('emi').textContent = '₹ ' + fmt(res.emi);
-        $('totalPayment').textContent = '₹ ' + fmt(res.totalPayment);
-        $('totalInterest').textContent = '₹ ' + fmt(res.totalInterest);
-        buildScheduleTable(res.schedule);
-        const v = $('interestNote'); if (v) v.textContent = `Interest calculated for ${interestMonths} month(s) while EMI is spread over ${emiMonths} month(s).`;
-      }
+      <div style="margin-top:10px">
+        <div class="note">Total Payment</div>
+        <div id="totalPayment" style="font-weight:700">—</div>
+        <div class="note">Total Interest: <span id="totalInterest">—</span></div>
+      </div>
 
-      // Test harness (keeps existing tests; added extra cases)
-      function runTests(){
-        const cases = [
-          {label:'15% / 12m (canonical)', P:10000, rate:15, emiMonths:12, expectEmi:958.33},
-          {label:'13% / 11m (interest for 12m)', P:10000, rate:13, emiMonths:11, expectEmi:1027.27},
-          {label:'18% / 6m (interest for 6m)', P:10000, rate:18, emiMonths:6, expectEmi:1816.67},
-          {label:'50k @13% / 17m', P:50000, rate:13, emiMonths:17, expectEmi:3514.71},
-          {label:'250k @15% / 24m', P:250000, rate:15, emiMonths:24, expectEmi:13541.67}
-        ];
-        const out = [];
-        for(const c of cases){
-          const interestMonths = getInterestMonthsFor(c.rate, c.emiMonths);
-          const r = calcFlatMapped(c.P, c.rate, c.emiMonths, interestMonths);
-          const pass = Math.abs(r.emi - c.expectEmi) < 0.6; // tolerance
-          out.push(`${c.label} => EMI=${fmt(r.emi)} expected≈${c.expectEmi} => ${pass? 'PASS':'FAIL'}`);
-          console.log(out[out.length-1]);
-        }
-        const pre = $('testResults'); if (pre) pre.textContent = out.join('\n');
-      }
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>EMI</th>
+            <th>Principal</th>
+            <th>Interest</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody id="schedule"></tbody>
+      </table>
+    </div>
 
-      // Wire up events and init
-      document.addEventListener('DOMContentLoaded', ()=>{
-        populateTenures(15);
-        const t = $('tenureSelect'); if (t) t.value = t.options.length ? t.options[0].value : 0;
-        $('rateSelect').addEventListener('change', ()=>{ populateTenures($('rateSelect').value); });
-        $('calc').addEventListener('click', doCalculate);
-        $('downloadCsv').addEventListener('click', ()=>{
-          const tbody = document.querySelector('#schedule tbody');
-          const rows = Array.from(tbody.querySelectorAll('tr')).map(tr=>({
-            month: tr.children[0].textContent.trim(), emi: parseFloat(tr.children[1].textContent.replace(/,/g,'')), principal: parseFloat(tr.children[2].textContent.replace(/,/g,'')), interest: parseFloat(tr.children[3].textContent.replace(/,/g,'')), balance: parseFloat(tr.children[4].textContent.replace(/,/g,''))
-          }));
-          downloadCsv(rows);
-        });
-        $('reset').addEventListener('click', ()=>{
-          $('amount').value = 10000; $('rateSelect').value = 15; populateTenures(15); const t = $('tenureSelect'); if (t) t.value = t.options.length ? t.options[0].value : 0;
-          document.querySelector('#schedule tbody').innerHTML = '';
-          $('emi').textContent = '—'; $('totalPayment').textContent = '—'; $('totalInterest').textContent = '—';
-          const v = $('interestNote'); if (v) v.textContent = '';
-        });
-        doCalculate();
-        runTests();
-      });
-    })();
-  </script>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Number(n).toLocaleString('en-IN',{minimumFractionDigits:2});
+
+function populateTenure(rate){
+  const t = $('tenureSelect');
+  t.innerHTML='';
+  let opts=[];
+  if(rate==15) opts=[12,18,24,30];
+  else if(rate==14) opts=[11,17,23,29];
+  else if(rate==18) opts=[6];
+  opts.forEach(v=>{
+    const o=document.createElement('option');
+    o.value=v;o.text=v;t.appendChild(o);
+  });
+}
+
+function interestMonths(rate,emi){
+  if(rate==14) return emi+1;
+  return emi;
+}
+
+function calculate(){
+  const P=+$('amount').value;
+  const rate=+$('rateSelect').value;
+  const emiM=+$('tenureSelect').value;
+  const intM=interestMonths(rate,emiM);
+
+  const totalInterest=(P*rate*intM/12)/100;
+  const total=P+totalInterest;
+  const emi=total/emiM;
+
+  $('emi').textContent='₹ '+fmt(emi);
+  $('totalPayment').textContent='₹ '+fmt(total);
+  $('totalInterest').textContent='₹ '+fmt(totalInterest);
+  $('interestNote').textContent=`Interest calculated for ${intM} months`;
+
+  const tbody=$('schedule');
+  tbody.innerHTML='';
+  let bal=P;
+  const mp=P/emiM;
+  const mi=totalInterest/emiM;
+
+  for(let i=1;i<=emiM;i++){
+    bal=Math.max(0,bal-mp);
+    tbody.innerHTML+=`
+      <tr>
+        <td style="text-align:left">${i}</td>
+        <td>${fmt(emi)}</td>
+        <td>${fmt(mp)}</td>
+        <td>${fmt(mi)}</td>
+        <td>${fmt(bal)}</td>
+      </tr>`;
+  }
+}
+
+$('rateSelect').onchange=()=>populateTenure($('rateSelect').value);
+$('calc').onclick=calculate;
+$('reset').onclick=()=>location.reload();
+
+populateTenure(15);
+calculate();
+</script>
+
 </body>
 </html>
